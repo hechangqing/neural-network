@@ -59,7 +59,7 @@ public:
             is >> std::ws;
         }
 
-        // init weight and bias (Uniform)
+        // init weight (Uniform)
         w_z_x_.Resize(output_dim_, input_dim_, kUndefined);
         w_r_x_.Resize(output_dim_, input_dim_, kUndefined);
         w_z_h_.Resize(output_dim_, output_dim_, kUndefined);
@@ -365,11 +365,11 @@ public:
             // debug info
             if (DEBUG) {
                 std::cerr << "backward-pass frame " << t << "\n";
-                std::cerr << "derivative wrt input r " << d_z;
-                std::cerr << "derivative wrt input m " << d_r;
-                std::cerr << "derivative wrt input h " << d_g;
-                std::cerr << "derivative wrt input o " << d_m;
-                std::cerr << "derivative wrt input c " << d_h;
+                std::cerr << "derivative wrt input z " << d_z;
+                std::cerr << "derivative wrt input r " << d_r;
+                std::cerr << "derivative wrt input g " << d_g;
+                std::cerr << "derivative wrt input m " << d_m;
+                std::cerr << "derivative wrt input h " << d_h;
             }
         }
         
