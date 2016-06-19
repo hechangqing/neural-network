@@ -256,9 +256,8 @@ public:
             CuSubMatrix<BaseFloat> y_z(YZ.RowRange(t*S,S));  
             CuSubMatrix<BaseFloat> y_r(YR.RowRange(t*S,S));  
             CuSubMatrix<BaseFloat> y_g(YG.RowRange(t*S,S));  
-            CuSubMatrix<BaseFloat> y_h(YH.RowRange(t*S,S));  
             CuSubMatrix<BaseFloat> y_m(YM.RowRange(t*S,S));  
-
+            CuSubMatrix<BaseFloat> y_h(YH.RowRange(t*S,S));  
     
             // h(t-1) -> z, r
             y_z.AddMatMat(1.0, YH.RowRange((t-1)*S,S), kNoTrans, w_z_h_, kTrans,  1.0);
@@ -308,123 +307,76 @@ public:
         int32 S = nstream_;
 
         // disassemble propagated buffer into neurons
-        CuSubMatrix<BaseFloat> YG(propagate_buf_.ColRange(0*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> YI(propagate_buf_.ColRange(1*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> YF(propagate_buf_.ColRange(2*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> YO(propagate_buf_.ColRange(3*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> YC(propagate_buf_.ColRange(4*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> YH(propagate_buf_.ColRange(5*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> YM(propagate_buf_.ColRange(6*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> YR(propagate_buf_.ColRange(7*ncell_, nrecur_));
+        CuSubMatrix<BaseFloat> YZ(propagate_buf_.ColRange(0*output_dim_, output_dim_));
+        CuSubMatrix<BaseFloat> YR(propagate_buf_.ColRange(1*output_dim_, output_dim_));
+        CuSubMatrix<BaseFloat> YG(propagate_buf_.ColRange(2*output_dim_, output_dim_));
+        CuSubMatrix<BaseFloat> YM(propagate_buf_.ColRange(3*output_dim_, output_dim_));
+        CuSubMatrix<BaseFloat> YH(propagate_buf_.ColRange(4*output_dim_, output_dim_));
     
         // 0:dummy, [1,T] frames, T+1 backward pass history
-        backpropagate_buf_.Resize((T+2)*S, 7 * ncell_ + nrecur_, kSetZero);
+        backpropagate_buf_.Resize((T+2)*S, 5 * output_dim_, kSetZero);
 
         // disassemble backpropagate buffer into neurons
-        CuSubMatrix<BaseFloat> DG(backpropagate_buf_.ColRange(0*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> DI(backpropagate_buf_.ColRange(1*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> DF(backpropagate_buf_.ColRange(2*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> DO(backpropagate_buf_.ColRange(3*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> DC(backpropagate_buf_.ColRange(4*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> DH(backpropagate_buf_.ColRange(5*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> DM(backpropagate_buf_.ColRange(6*ncell_, ncell_));
-        CuSubMatrix<BaseFloat> DR(backpropagate_buf_.ColRange(7*ncell_, nrecur_));
-
-        CuSubMatrix<BaseFloat> DGIFO(backpropagate_buf_.ColRange(0, 4*ncell_));
+        CuSubMatrix<BaseFloat> DZ(backpropagate_buf_.ColRange(0*output_dim_, output_dim_));
+        CuSubMatrix<BaseFloat> DR(backpropagate_buf_.ColRange(1*output_dim_, output_dim_));
+        CuSubMatrix<BaseFloat> DG(backpropagate_buf_.ColRange(2*output_dim_, output_dim_));
+        CuSubMatrix<BaseFloat> DM(backpropagate_buf_.ColRange(3*output_dim_, output_dim_));
+        CuSubMatrix<BaseFloat> DH(backpropagate_buf_.ColRange(4*output_dim_, output_dim_));
 
         // projection layer to LSTM output is not recurrent, so backprop it all in once
-        DR.RowRange(1*S,T*S).CopyFromMat(out_diff);
+        DH.RowRange(1*S,T*S).CopyFromMat(out_diff);
 
         for (int t = T; t >= 1; t--) {
-            CuSubMatrix<BaseFloat> y_g(YG.RowRange(t*S,S));  
-            CuSubMatrix<BaseFloat> y_i(YI.RowRange(t*S,S));  
-            CuSubMatrix<BaseFloat> y_f(YF.RowRange(t*S,S));  
-            CuSubMatrix<BaseFloat> y_o(YO.RowRange(t*S,S));  
-            CuSubMatrix<BaseFloat> y_c(YC.RowRange(t*S,S));  
-            CuSubMatrix<BaseFloat> y_h(YH.RowRange(t*S,S));  
-            CuSubMatrix<BaseFloat> y_m(YM.RowRange(t*S,S));  
+            CuSubMatrix<BaseFloat> y_z(YZ.RowRange(t*S,S));  
             CuSubMatrix<BaseFloat> y_r(YR.RowRange(t*S,S));  
+            CuSubMatrix<BaseFloat> y_g(YG.RowRange(t*S,S));  
+            CuSubMatrix<BaseFloat> y_m(YM.RowRange(t*S,S));  
+            CuSubMatrix<BaseFloat> y_h(YH.RowRange(t*S,S));  
     
-            CuSubMatrix<BaseFloat> d_g(DG.RowRange(t*S,S));
-            CuSubMatrix<BaseFloat> d_i(DI.RowRange(t*S,S));
-            CuSubMatrix<BaseFloat> d_f(DF.RowRange(t*S,S));
-            CuSubMatrix<BaseFloat> d_o(DO.RowRange(t*S,S));
-            CuSubMatrix<BaseFloat> d_c(DC.RowRange(t*S,S));
-            CuSubMatrix<BaseFloat> d_h(DH.RowRange(t*S,S));
-            CuSubMatrix<BaseFloat> d_m(DM.RowRange(t*S,S));
+            CuSubMatrix<BaseFloat> d_z(DZ.RowRange(t*S,S));
             CuSubMatrix<BaseFloat> d_r(DR.RowRange(t*S,S));
-    
+            CuSubMatrix<BaseFloat> d_g(DG.RowRange(t*S,S));
+            CuSubMatrix<BaseFloat> d_m(DM.RowRange(t*S,S));
+            CuSubMatrix<BaseFloat> d_h(DH.RowRange(t*S,S));
+            
+            // h
+            d_h.AddMatMat(1.0, DR.RowRange((t+1)*S,S), kNoTrans, w_r_h_, kNoTrans, 1.0);
+            d_h.AddMatMat(1.0, DZ.RowRange((t+1)*S,S), kNoTrans, w_z_h_, kNoTrans, 1.0);
+            d_h.AddMat(1.0, DH.RowRange((t+1)*S,S));
+            d_h.AddMatMatElements(-1.0, DH.RowRange((t+1)*S,S), YZ.RowRange((t+1)*S,S), 1.0);
+            d_h.AddMatMatElements(1.0, DG.RowRange((t+1)*S,S), YR.RowRange((t+1)*S,S), 1.0);
+            
+            // m
+            d_m.AddMatMatElements(1.0, d_h, y_z, 0.0);
+            d_m.DiffTanh(y_m, d_m);
+            
+            // g
+            d_g.AddMatMat(1.0, d_m, kNoTrans, w_m_g_, kNoTrans, 0.0);
+
             // r
-            //   Version 1 (precise gradients): 
-            //   backprop error from g(t+1), i(t+1), f(t+1), o(t+1) to r(t)
-            d_r.AddMatMat(1.0, DGIFO.RowRange((t+1)*S,S), kNoTrans, w_gifo_r_, kNoTrans, 1.0);
+            d_r.AddMatMatElements(1.0, d_g, YH.RowRange((t-1)*S,S), 0.0);
+            d_r.DiffSigmoid(y_r, d_r);
 
-            /*
-            //   Version 2 (Alex Graves' PhD dissertation): 
-            //   only backprop g(t+1) to r(t) 
-            CuSubMatrix<BaseFloat> w_g_r_(w_gifo_r_.RowRange(0, ncell_));
-            d_r.AddMatMat(1.0, DG.RowRange((t+1)*S,S), kNoTrans, w_g_r_, kNoTrans, 1.0);
-            */
-
-            /*
-            //   Version 3 (Felix Gers' PhD dissertation): 
-            //   truncate gradients of g(t+1), i(t+1), f(t+1), o(t+1) once they leak out memory block
-            //   CEC(with forget connection) is the only "error-bridge" through time
-            ;
-            */
-    
-            // r -> m
-            d_m.AddMatMat(1.0, d_r, kNoTrans, w_r_m_, kNoTrans, 0.0);
-    
-            // m -> h via output gate
-            d_h.AddMatMatElements(1.0, d_m, y_o, 0.0);
-            d_h.DiffTanh(y_h, d_h);
-    
-            // o
-            d_o.AddMatMatElements(1.0, d_m, y_h, 0.0);
-            d_o.DiffSigmoid(y_o, d_o);
-    
-            // c
-            //   1. diff from h(t)
-            //   2. diff from c(t+1) (via forget-gate between CEC)
-            //   3. diff from i(t+1) (via peephole)
-            //   4. diff from f(t+1) (via peephole)
-            //   5. diff from o(t)   (via peephole, not recurrent)
-            d_c.AddMat(1.0, d_h);  
-            d_c.AddMatMatElements(1.0, DC.RowRange((t+1)*S,S), YF.RowRange((t+1)*S,S), 1.0);
-            d_c.AddMatDiagVec(1.0, DI.RowRange((t+1)*S,S), kNoTrans, peephole_i_c_, 1.0);
-            d_c.AddMatDiagVec(1.0, DF.RowRange((t+1)*S,S), kNoTrans, peephole_f_c_, 1.0);
-            d_c.AddMatDiagVec(1.0, d_o                   , kNoTrans, peephole_o_c_, 1.0);
-    
-            // f
-            d_f.AddMatMatElements(1.0, d_c, YC.RowRange((t-1)*S,S), 0.0);
-            d_f.DiffSigmoid(y_f, d_f);
-    
-            // i
-            d_i.AddMatMatElements(1.0, d_c, y_g, 0.0);
-            d_i.DiffSigmoid(y_i, d_i);
-    
-            // c -> g via input gate
-            d_g.AddMatMatElements(1.0, d_c, y_i, 0.0);
-            d_g.DiffTanh(y_g, d_g);
-    
+            // z
+            d_z.AddMatMatElements( 1.0, d_h, y_m, 0.0);
+            d_z.AddMatMatElements(-1.0, d_h, YH.RowRange((t-1)*S,S), 1.0);
+            d_z.DiffSigmoid(y_z, d_z);
+            
             // debug info
             if (DEBUG) {
                 std::cerr << "backward-pass frame " << t << "\n";
-                std::cerr << "derivative wrt input r " << d_r;
-                std::cerr << "derivative wrt input m " << d_m;
-                std::cerr << "derivative wrt input h " << d_h;
-                std::cerr << "derivative wrt input o " << d_o;
-                std::cerr << "derivative wrt input c " << d_c;
-                std::cerr << "derivative wrt input f " << d_f;
-                std::cerr << "derivative wrt input i " << d_i;
-                std::cerr << "derivative wrt input g " << d_g;
+                std::cerr << "derivative wrt input r " << d_z;
+                std::cerr << "derivative wrt input m " << d_r;
+                std::cerr << "derivative wrt input h " << d_g;
+                std::cerr << "derivative wrt input o " << d_m;
+                std::cerr << "derivative wrt input c " << d_h;
             }
         }
-
-        // g,i,f,o -> x, do it all in once
-        in_diff->AddMatMat(1.0, DGIFO.RowRange(1*S,T*S), kNoTrans, w_gifo_x_, kNoTrans, 0.0);
-
+        
+        // z,r,m -> x, do it all in once
+        in_diff->AddMatMat(1.0, DZ.RowRange(1*S,T*S), kNoTrans, w_z_x_, kNoTrans, 0.0);
+        in_diff->AddMatMat(1.0, DR.RowRange(1*S,T*S), kNoTrans, w_r_x_, kNoTrans, 1.0);
+        in_diff->AddMatMat(1.0, DM.RowRange(1*S,T*S), kNoTrans, w_m_x_, kNoTrans, 1.0);
         //// backward pass dropout
         //if (dropout_rate_ != 0.0) {
         //    in_diff->MulElements(dropout_mask_);
@@ -433,43 +385,37 @@ public:
         // calculate delta
         const BaseFloat mmt = opts_.momentum;
     
-        // weight x -> g, i, f, o
-        w_gifo_x_corr_.AddMatMat(1.0, DGIFO.RowRange(1*S,T*S), kTrans, 
-                                      in                     , kNoTrans, mmt);
-        // recurrent weight r -> g, i, f, o
-        w_gifo_r_corr_.AddMatMat(1.0, DGIFO.RowRange(1*S,T*S), kTrans, 
-                                      YR.RowRange(0*S,T*S)   , kNoTrans, mmt);
-        // bias of g, i, f, o
-        bias_corr_.AddRowSumMat(1.0, DGIFO.RowRange(1*S,T*S), mmt);
-    
-        // recurrent peephole c -> i
-        peephole_i_c_corr_.AddDiagMatMat(1.0, DI.RowRange(1*S,T*S), kTrans, 
-                                              YC.RowRange(0*S,T*S), kNoTrans, mmt);
-        // recurrent peephole c -> f
-        peephole_f_c_corr_.AddDiagMatMat(1.0, DF.RowRange(1*S,T*S), kTrans, 
-                                              YC.RowRange(0*S,T*S), kNoTrans, mmt);
-        // peephole c -> o
-        peephole_o_c_corr_.AddDiagMatMat(1.0, DO.RowRange(1*S,T*S), kTrans, 
-                                              YC.RowRange(1*S,T*S), kNoTrans, mmt);
-
-        w_r_m_corr_.AddMatMat(1.0, DR.RowRange(1*S,T*S), kTrans, 
-                                   YM.RowRange(1*S,T*S), kNoTrans, mmt);
+        // weight x -> z
+        w_z_x_corr_.AddMatMat(1.0, DZ.RowRange(1*S,T*S), kTrans, 
+                                   in                  , kNoTrans, mmt);
+        // weight x -> r
+        w_r_x_corr_.AddMatMat(1.0, DR.RowRange(1*S,T*S), kTrans, 
+                                   in                  , kNoTrans, mmt);
+        // weight x -> m
+        w_m_x_corr_.AddMatMat(1.0, DM.RowRange(1*S,T*S), kTrans, 
+                                   in                  , kNoTrans, mmt);
+        // recurrent weight h -> z, r
+        w_z_h_corr_.AddMatMat(1.0, DZ.RowRange(1*S,T*S), kTrans, 
+                                   YH.RowRange(0*S,T*S), kNoTrans, mmt);
+        w_r_h_corr_.AddMatMat(1.0, DR.RowRange(1*S,T*S), kTrans, 
+                                   YH.RowRange(0*S,T*S), kNoTrans, mmt);
+        // recurrent weight g -> m
+        w_m_g_corr_.AddMatMat(1.0, DM.RowRange(1*S,T*S), kTrans, 
+                                   YG.RowRange(1*S,T*S), kNoTrans, mmt);
 
         if (clip_gradient_ > 0.0) {
-          w_gifo_x_corr_.ApplyFloor(-clip_gradient_);
-          w_gifo_x_corr_.ApplyCeiling(clip_gradient_);
-          w_gifo_r_corr_.ApplyFloor(-clip_gradient_);
-          w_gifo_r_corr_.ApplyCeiling(clip_gradient_);
-          bias_corr_.ApplyFloor(-clip_gradient_);
-          bias_corr_.ApplyCeiling(clip_gradient_);
-          w_r_m_corr_.ApplyFloor(-clip_gradient_);
-          w_r_m_corr_.ApplyCeiling(clip_gradient_);
-          peephole_i_c_corr_.ApplyFloor(-clip_gradient_);
-          peephole_i_c_corr_.ApplyCeiling(clip_gradient_);
-          peephole_f_c_corr_.ApplyFloor(-clip_gradient_);
-          peephole_f_c_corr_.ApplyCeiling(clip_gradient_);
-          peephole_o_c_corr_.ApplyFloor(-clip_gradient_);
-          peephole_o_c_corr_.ApplyCeiling(clip_gradient_);
+          w_z_x_corr_.ApplyFloor(-clip_gradient_);
+          w_z_x_corr_.ApplyCeiling(clip_gradient_);
+          w_r_x_corr_.ApplyFloor(-clip_gradient_);
+          w_r_x_corr_.ApplyCeiling(clip_gradient_);
+          w_m_x_corr_.ApplyFloor(-clip_gradient_);
+          w_m_x_corr_.ApplyCeiling(clip_gradient_);
+          w_z_h_corr_.ApplyFloor(-clip_gradient_);
+          w_z_h_corr_.ApplyCeiling(clip_gradient_);
+          w_r_h_corr_.ApplyFloor(-clip_gradient_);
+          w_r_h_corr_.ApplyCeiling(clip_gradient_);
+          w_m_g_corr_.ApplyFloor(-clip_gradient_);
+          w_m_g_corr_.ApplyCeiling(clip_gradient_);
         }
 
         if (DEBUG) {
