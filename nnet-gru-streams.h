@@ -226,7 +226,7 @@ public:
           do_stream_reset = true;
           nstream_ = 1; // Karel: we are in nnet-forward, so 1 stream,
           prev_nnet_state_.Resize(nstream_, 5 * output_dim_, kSetZero);
-          KALDI_LOG << "Running nnet-forward with per-utterance LSTM-state reset";
+          KALDI_LOG << "Running nnet-forward with per-utterance GRU-state reset";
         }
         if (do_stream_reset) prev_nnet_state_.SetZero();
         KALDI_ASSERT(nstream_ > 0);
@@ -323,7 +323,7 @@ public:
         CuSubMatrix<BaseFloat> DM(backpropagate_buf_.ColRange(3*output_dim_, output_dim_));
         CuSubMatrix<BaseFloat> DH(backpropagate_buf_.ColRange(4*output_dim_, output_dim_));
 
-        // projection layer to LSTM output is not recurrent, so backprop it all in once
+        // backprop it all in once
         DH.RowRange(1*S,T*S).CopyFromMat(out_diff);
 
         for (int t = T; t >= 1; t--) {
